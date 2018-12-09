@@ -1,6 +1,6 @@
 const fs = require('fs');
 
-const fileData = fs.readFileSync('./6_0_input_test.txt', 'utf8');
+const fileData = fs.readFileSync('./6_0_input.txt', 'utf8');
 const inputData = fileData.split('\r\n').map(line => {
   const [x, y] = line.split(', '); 
   return [Number(x), Number(y)];
@@ -19,7 +19,6 @@ const make2DArray = (width, height) => {
 const field = make2DArray(xMax + 2, yMax + 2);
 
 const getDistance = (x1, y1, x2, y2) => (Math.abs(x1 - x2) + Math.abs(y1 - y2));
-const sorter = (a, b) => a.distance-b.distance;
 const transpose = m => m[0].map((x, i) => m.map(x => x[i]));
 
 const setAreas = (field, peaks) => field.map((col, colIndex) => col.map((cell, cellIndex) => {
@@ -31,8 +30,7 @@ const setAreas = (field, peaks) => field.map((col, colIndex) => col.map((cell, c
     })
   });
 
-  const sortedDistances = distances.sort(sorter);
-  console.log(sortedDistances.map(dist => JSON.stringify(dist)));
+  const sortedDistances = distances.sort((a, b) => a.distance - b.distance);
   
   const [minDistance, nextDistance] = sortedDistances;
 
@@ -52,11 +50,25 @@ const getPeaksOfFiniteAreas = (field, peaks) => {
   traverseCells(field.map(col => col[0]));
   traverseCells(field.map(col => col[col.lenght -1]));
 
-  return allPeaks;
+  return Array.from(allPeaks);
 }
 
 const finitePeaks = getPeaksOfFiniteAreas(claimedField, inputData);
 console.log(finitePeaks);
 
-// console.log(inputData, inputData.length, xMax, yMax)
+const countAreas = (field, finitePeaks) => {
+  const areas = finitePeaks.reduce((acc, peak) => ({ ...acc, [peak]: 0 }), {});
 
+  field.forEach(col => col.forEach(cell => {
+    if (areas[cell] !== undefined) {
+      areas[cell] += 1;
+    }
+  }))
+
+  return areas;
+}
+
+const areas = countAreas(claimedField, finitePeaks);
+console.log(areas);
+
+console.log(Math.max(...Object.values(areas)));
