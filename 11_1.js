@@ -1,3 +1,5 @@
+// can be optimized using https://en.wikipedia.org/wiki/Summed-area_table
+
 const SERIAL_NUMBER = 9995;
 const FIELD_SIZE = 300;
 const field = Array.from({ length: FIELD_SIZE }, () => Array.from({ length: FIELD_SIZE }, () => 0))
