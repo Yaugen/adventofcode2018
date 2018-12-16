@@ -1,55 +1,50 @@
 const fs = require('fs');
+const { getInitialData, getFieldWithData, printField, sorter } = require('./15_0');
 
 const rawData = fs.readFileSync('./15_0_input.txt', 'utf8');
 const WIDTH = rawData.split('\n')[0].length - 1;
 const HEIGHT = rawData.split('\n').length;
 
-const sorter = (a, b) => (a.y === b.y ? a.x - b.x : a.y -b.y)
-const printField = (field) => {
-  for(let y = 0; y < HEIGHT; y += 1) {
-    const line = [];
-    for(let x = 0; x < WIDTH; x += 1) {
-      line.push(field[x][y]);
-    }
-    console.log(line.join(''));
+
+const getNeighbours = (field, { x, y }) => {
+  const neighbours = [];
+  if(field[x-1] && field[x-1][y]) {
+    neighbours.push({ x: x-1, y, v: field[x-1][y]});
+  }
+  if(field[x+1] && field[x+1][y]) {
+    neighbours.push({ x: x+1, y, v: field[x+1][y]});
+  }
+  if(field[x] && field[x][y-1]) {
+    neighbours.push({ x, y:y-1, v: field[x][y-1]});
+  }
+  if(field[x] && field[x][y+1]) {
+    neighbours.push({ x, y:y+1, v: field[x][y+1]});
+  }
+  return neighbours;
+}
+const fillDistances = (field, from, current = 0) => {
+  const neighbours = getNeighbours(field, from).filter(({ v }) => v === '.' || (Number.isInteger(v) && v >= current + 1 ));
+  if(neighbours.length) {
+    neighbours.forEach(n => {
+      field[n.x][n.y] = current + 1;
+      fillDistances(field, n, current + 1)
+    });
+
   }
 }
-const getFieldWithData = (field, data) => {
-  const emptyField = Array.from({ length: WIDTH }, () => Array.from({ length: HEIGHT }));
-  for(let x = 0; x < WIDTH; x++) {
-    for( let y = 0; y < HEIGHT; y++) {
-      const dataEntry = data.find(item => item.x === x && item.y == y);
-      emptyField[x][y] = dataEntry ? dataEntry.label : field[x][y];
-    }
-  }
-  return emptyField;
+const {elfs, goblins, emptyField } = getInitialData(rawData, WIDTH, HEIGHT);
+const step = (unit, isElf, elfs, goblins) => {
+  const units = [...elfs, ...goblins].sort(sorter);
+  const currentField = getFieldWithData(emptyField, units);
+  fillDistances(currentField, elfs[0]);
+  const goblinsReachable = goblins.map(goblin => {
+    const neighbours = getNeighbours(currentField, goblin);
+    const reachable = neighbours.filter(({ v }) => Number.isInteger(v));
+    const minReachable = reachable.reduce((min, item) => (item.v < min.v ? item : min), { v: Number.MAX_VALUE })
+    return { ...goblin, minReachable };
+  })
+  printField(currentField);
+  console.log(goblinsReachable);
 }
 
-const getInitialData = rawData => {
-  const goblins = [];
-  const elfs = [];
-  const emptyField = Array.from({ length: WIDTH }, () => Array.from({ length: HEIGHT }));
-  const raw = rawData.split('\r\n');
-
-  for(let x = 0; x < WIDTH; x++) {
-    for( let y = 0; y < HEIGHT; y++) {
-      const cell = raw[y][x];
-      if(cell === 'G') {
-        goblins.push({ x, y, hp: 300, dmg: 3, label: cell });
-        
-      } else if (cell === 'E') {
-        elfs.push({ x, y, hp: 300, dmg: 3, label: cell });
-      }
-      emptyField[x][y] = (cell === 'E' || cell === 'G' ? '.' : cell);
-    }
-  }
-  elfs.sort(sorter);
-  goblins.sort(sorter);
-
-  return { elfs, goblins, emptyField };
-}
-
-const {elfs, goblins, emptyField } = getInitialData(rawData);
-
-printField(getFieldWithData(emptyField, [...elfs, ...goblins]))
-printField(emptyField);
+step(null, null, elfs, goblins);
